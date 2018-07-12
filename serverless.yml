@@ -1,0 +1,177 @@
+service: cognito-user-manager-backend
+provider:
+  name: aws
+  stage: ${opt:stage, 'dev'}
+  runtime: go1.x
+  region: eu-central-1
+  role: cumbDefaultRole
+  memorySize: 256
+
+package:
+ exclude:
+   - ./**
+ include:
+   - ./bin/**
+
+functions:
+  authorizer:
+    handler: bin/authorizer
+    description: JWT authorizer
+
+  list-pools:
+    role: cumbCognitoRole
+    handler: bin/list-pools
+    description: Get all user pools
+    events:
+      - http:
+          path: list-pools
+          method: post
+          cors: true
+          authorizer: authorizer
+
+  list-users:
+    role: cumbCognitoRole
+    handler: bin/list-users
+    description: Get all users for a given user pool
+    events:
+      - http:
+          path: list-users
+          method: post
+          cors: true
+          authorizer: authorizer
+
+  user-enabled:
+    role: cumbCognitoRole
+    handler: bin/user-enabled
+    description: Toggle user enabled status inside given user pool
+    events:
+      - http:
+          path: users/{username}/enabled
+          method: post
+          cors: true
+          authorizer: authorizer
+
+  user-details:
+    role: cumbCognitoRole
+    handler: bin/user-details
+    description: Get user details by username for given user pool
+    events:
+      - http:
+          path: user-details
+          method: post
+          cors: true
+          authorizer: authorizer
+
+  update-user-attributes:
+    role: cumbCognitoRole
+    handler: bin/update-user-attributes
+    description: Update user attributes
+    events:
+      - http:
+          path: update-user-attributes
+          method: post
+          cors: true
+          authorizer: authorizer
+
+  sign-in:
+    handler: bin/sign-in
+    description: Get jwt token using username/password
+    events:
+      - http:
+          path: signin
+          method: post
+          cors: true
+    environment:
+      USERNAME: "admin"
+      PASSWORD: "secret2018"
+
+resources:
+  Resources:
+    GatewayResponseDefault4XX:
+          Type: 'AWS::ApiGateway::GatewayResponse'
+          Properties:
+            ResponseParameters:
+              gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+              gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              gatewayresponse.header.Access-Control-Allow-Methods: "'PUT,POST,OPTIONS'"
+            ResponseType: DEFAULT_4XX
+            RestApiId:
+              Ref: 'ApiGatewayRestApi'
+    cumbDefaultRole:
+      Type: AWS::IAM::Role
+      Properties:
+        RoleName: CognitoUserManagerBackendDefaultRole
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - lambda.amazonaws.com
+              Action: sts:AssumeRole
+        Policies:
+          - PolicyName: CognitoUserManagerBackendDefaultPolicy
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - logs:CreateLogGroup
+                    - logs:CreateLogStream
+                    - logs:PutLogEvents
+                  Resource:
+                    - 'Fn::Join':
+                      - ':'
+                      -
+                        - 'arn:aws:logs'
+                        - Ref: 'AWS::Region'
+                        - Ref: 'AWS::AccountId'
+                        - 'log-group:/aws/lambda/*:*:*'
+    cumbCognitoRole:
+      Type: AWS::IAM::Role
+      Properties:
+        RoleName: CognitoUserManagerBackendCognitoRole
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - lambda.amazonaws.com
+              Action: sts:AssumeRole
+        Policies:
+          - PolicyName: CognitoUserManagerBackendCognitoPolicy
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - logs:CreateLogGroup
+                    - logs:CreateLogStream
+                    - logs:PutLogEvents
+                  Resource:
+                    - 'Fn::Join':
+                      - ':'
+                      -
+                        - 'arn:aws:logs'
+                        - Ref: 'AWS::Region'
+                        - Ref: 'AWS::AccountId'
+                        - 'log-group:/aws/lambda/*:*:*'
+                - Effect: Allow
+                  Action:
+                    - cognito-idp:*
+                  Resource: "*"
+  Outputs:
+    ServiceEndpoint:
+      Description: URL of the service endpoint
+      Value:
+        Fn::Join:
+          - ""
+          - - "https://"
+            - Ref: ApiGatewayRestApi
+            - ".execute-api.eu-central-1."
+            - Ref: AWS::URLSuffix
+            - "/"
+            - ${self:provider.stage}
+      Export:
+        Name: ${self:service}:${self:provider.stage}:ServiceEndpoint
