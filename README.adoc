@@ -66,6 +66,9 @@ fast way to:
 
 By default `sls deploy` will create a stack in `eu-central-1` region with `dev` stage.
 
+Also, default username/password combination is: `admin/secret2018`. You can change this is
+`serverless.yml` file.
+
 [cols="1,4,4,3,4", options="header"]
 .Endpoints
 |===
