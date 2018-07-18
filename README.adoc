@@ -1,12 +1,19 @@
-= API used to manage AWS Cognito users inside user pool
+= API used to manage AWS Cognito users inside a user pool
 Doc Writer <doc.writer@asciidoctor.org>
 v1.0, 2013-08-01
 :toc:
 
+== Intro
+This API is used by https://github.com/jzoric/cognito-user-manager-ui[cognito-user-manager-ui] project. API gives a
+fast way to:
+
+* Enabled/Disable specific user inside a user pool
+* Update some of the user attributes for a given user
+
 == Requirements
 * https://serverless.com/[serverless framework]
 * IAM user
-* Go
+* Golang
 
 === IAM User
 
