@@ -1,0 +1,118 @@
+= API used to manage AWS Cognito users inside user pool
+Doc Writer <doc.writer@asciidoctor.org>
+v1.0, 2013-08-01
+:toc:
+
+== Requirements
+* https://serverless.com/[serverless framework]
+* IAM user
+* Go
+
+=== IAM User
+
+.Policy summary
+----
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "cloudwatch:*",
+                "s3:*",
+                "logs:*",
+                "lambda:*",
+                "dynamodb:*",
+                "events:*",
+                "cloudformation:*",
+                "cognito-idp:*",
+                "cognito-sync:*",
+                "cognito-identity:*",
+                "tag:GetResources",
+                "iam:*"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "execute-api:Invoke"
+            ],
+            "Resource": "arn:aws:execute-api:*:*:*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "apigateway:*"
+            ],
+            "Resource": "arn:aws:apigateway:*::/*"
+        }
+    ]
+}
+----
+
+== Setup and run
+* Clone this repo
+* Run `make`
+* Run `sls deploy`
+
+By default `sls deploy` will create a stack in `eu-central-1` region with `dev` stage.
+
+[cols="1,4,4,3,4", options="header"]
+.Endpoints
+|===
+|Method
+|Endpoint
+|Data
+|Config
+|Description
+
+|POST
+|https://<id>.execute-api.eu-central-1.amazonaws.com/dev/list-pools
+| none
+|`headers: {Authorization: <token>}`
+|Get all user pools
+
+|POST
+|https://<id>.execute-api.eu-central-1.amazonaws.com/dev/list-users
+| `{"user_pool_id": <userPoolId>}`
+|`headers: {Authorization: <token>}`
+|Get all users for a given user pool
+
+|POST
+|https://<id>.execute-api.eu-central-1.amazonaws.com/dev/users/{username}/enabled
+|`{
+                      "user_pool_id": <userPoolId>,
+                  }`
+|`headers: {Authorization: <token>}`
+|Toggle user enabled status inside given user pool
+
+|POST
+|https://<id>.execute-api.eu-central-1.amazonaws.com/dev/user-details
+|`{
+     "user_pool_id": <userPoolId>,
+     "username": <username>
+  }`
+|`headers: {Authorization: <token>}`
+|Get user details by username for given user pool
+
+|POST
+|https://<id>.execute-api.eu-central-1.amazonaws.com/dev/update-user-attributes
+|`{
+                          "user_pool_id": <userPoolId>,
+                          "username": <username>,
+                          "user_attributes": [<userAttributes>]
+                      }`
+|`headers: {Authorization: <token>}`
+|Update user attributes
+
+|POST
+|https://<id>.execute-api.eu-central-1.amazonaws.com/dev/signin
+|`{
+                          "username": <username>,
+                          "password": <password>
+                      }`
+| none
+|Get jwt token using username/password
+|===
